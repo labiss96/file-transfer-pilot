@@ -8,32 +8,23 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
-import java.security.PublicKey;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Map;
-
-import static com.inspien.pilot.file.server.RSAPublicKeyUtils.decodePublicKey;
+import java.util.*;
 
 public class SFTPServerTest {
     @Before
     public void setup() throws Exception {
         ServerConfig config = new ServerConfig("C:/sftp", "sftp-1", SERVER_PORT,
-                "src/test/resources/sftp_server.priv",
-                "src/test/resources/sftp_server.pub"
+                "src/test/resources/sftp_server",
+                "src/test/resources/sftp_server.pub", "src/test/resources/authorized_keys"
         );
         Map<String, String> passwordMap = new HashMap<>();
-        Map<String, PublicKey> pubKeyMap = new HashMap<>();
-        Map<String, String> permissionMap = new HashMap<>();
-
         passwordMap.put(TEST_USERNAME, TEST_PASSWORD);
-        File userPubKey = new File("src/test/resources/id_rsa.pub");
-        byte[] pubKeyBytes = FileUtils.readBytesFromFile(userPubKey);
-        pubKeyMap.put(TEST_USERNAME, decodePublicKey(pubKeyBytes));
-        permissionMap.put(TEST_USERNAME, "C:/sftp/sftp-1/folder1");
+
+        Map<String, List<String>> permissionMap = new HashMap<>();
+        permissionMap.put(TEST_USERNAME, Arrays.asList("/folder1"));
 
         server = new SFTPServer(config);
-        server.setAccountsInfo(passwordMap, pubKeyMap, permissionMap);
+        server.setAccountsInfo(passwordMap, permissionMap);
         server.start();
     }
 
@@ -61,15 +52,16 @@ public class SFTPServerTest {
 
         final String testFileContents = "some file contents";
 
+        sftpChannel.cd("folder1");
+        System.out.println(sftpChannel.pwd());
         String uploadedFileName = "uploadFile";
         sftpChannel.put(new ByteArrayInputStream(testFileContents.getBytes()), uploadedFileName);
 
         String downloadedFileName = "target/downloadFile";
         sftpChannel.get(uploadedFileName, downloadedFileName);
-
         File downloadedFile = new File(downloadedFileName);
-        Assert.assertTrue(downloadedFile.exists());
 
+        Assert.assertTrue(downloadedFile.exists());
         String fileData = getFileContents(downloadedFile);
 
         Assert.assertEquals(testFileContents, fileData);
@@ -109,6 +101,7 @@ public class SFTPServerTest {
 
         final String testFileContents = "some file contents";
 
+        sftpChannel.cd("folder1");
         String uploadedFileName = "pubUploadFile";
         sftpChannel.put(new ByteArrayInputStream(testFileContents.getBytes()), uploadedFileName);
 

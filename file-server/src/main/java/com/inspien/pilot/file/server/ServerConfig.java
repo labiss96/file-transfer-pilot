@@ -6,13 +6,15 @@ public class ServerConfig {
     private int port;
     private String privKeyPath;
     private String pubKeyPath;
+    private String authorizedKeysPath;
 
-    public ServerConfig(String rootDir, String serverId, int port, String privKeyPath, String pubKeyPath) {
+    public ServerConfig(String rootDir, String serverId, int port, String privKeyPath, String pubKeyPath, String authorizedKeysPath) {
         this.rootDir = rootDir;
         this.serverId = serverId;
         this.port = port;
         this.privKeyPath = privKeyPath;
         this.pubKeyPath = pubKeyPath;
+        this.authorizedKeysPath = authorizedKeysPath;
     }
 
     public String getRootDir() {
@@ -33,5 +35,9 @@ public class ServerConfig {
 
     public String getPubKeyPath() {
         return pubKeyPath;
+    }
+
+    public String getAuthorizedKeysPath() {
+        return authorizedKeysPath;
     }
 }

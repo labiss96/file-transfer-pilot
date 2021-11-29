@@ -11,12 +11,14 @@
     <modules>
         <module>file-server</module>
         <module>file-util</module>
+        <module>file-client</module>
     </modules>
 
     <properties>
         <maven-compiler-plugin-version>3.8.0</maven-compiler-plugin-version>
         <maven-bundle-plugin.version>5.1.2</maven-bundle-plugin.version>
         <junit.version>4.12</junit.version>
+        <osgi.version>7.0.0</osgi.version>
     </properties>
 
     <dependencies>
