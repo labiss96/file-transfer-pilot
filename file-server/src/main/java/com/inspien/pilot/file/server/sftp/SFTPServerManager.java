@@ -1,11 +1,16 @@
-package com.inspien.pilot.file.server;
+package com.inspien.pilot.file.server.sftp;
 
+import com.inspien.pilot.file.server.AccountInfoProvider;
+import com.inspien.pilot.file.server.FileTransferServerManager;
+import com.inspien.pilot.file.server.PermissionInfoProvider;
 import com.inspien.pilot.file.util.FileUtils;
 import com.inspien.pilot.file.util.TicketKeyPair;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
-import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
+import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.server.subsystem.sftp.SftpEventListenerManager;
@@ -22,69 +27,81 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
-import java.util.*;
+import java.security.PublicKey;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
-public class SFTPServer {
+public class SFTPServerManager implements FileTransferServerManager {
 
-    public static void main(String[] args) throws Exception {
-        ServerConfig config = new ServerConfig("C:/sftp", "svc-1", 2222, "file-server/src/test/resources/sftp_server", "file-server/src/test/resources/sftp_server.pub", "file-server/src/test/resources/authorized_keys");
-        SFTPServer server = new SFTPServer(config);
-
-        Map<String, String> passwordMap = new HashMap<>();
-        Map<String, List<String>> permissionMap = new HashMap<>();
-        passwordMap.put("test", "1234");
-        permissionMap.put("test", Arrays.asList("C:/sftp/svc-1"));
-        server.setAccountsInfo(passwordMap, permissionMap);
-        server.start();
-        while (true);
-    }
+    private static final Session.AttributeKey<String> USERNAME= new Session.AttributeKey<>();
 
     private String rootDir;
     private String serverId;
     private int port;
     private String privKeyPath;
     private String pubKeyPath;
-    private String authorizedKeysPath;
 
     private SshServer sshServer;
+    private AccountInfoProvider accountInfoProvider;
+    private PermissionInfoProvider permissionInfoProvider;
 
-    public SFTPServer(ServerConfig config) {
+    public SFTPServerManager(SFTPServerConfig config, AccountInfoProvider accountInfoProvider, PermissionInfoProvider permissionInfoProvider) {
         this.rootDir = config.getRootDir();
         this.serverId = config.getServerId();
         this.port = config.getPort();
         this.privKeyPath = config.getPrivKeyPath();
         this.pubKeyPath = config.getPubKeyPath();
-        this.authorizedKeysPath = config.getAuthorizedKeysPath();
+        this.accountInfoProvider = accountInfoProvider;
+        this.permissionInfoProvider = permissionInfoProvider;
     }
 
-    private Map<String, String> passwordMap = new HashMap<>();
-    private Map<String, List<String>> permissionMap = new HashMap<>();
-
-    public void setAccountsInfo(Map<String, String> passwordMap, Map<String, List<String>> permissionMap) {
-        this.passwordMap = passwordMap;
-        this.permissionMap = permissionMap;
+    @Override
+    public void setAccountInfo(AccountInfoProvider accountInfoProvider) {
+        this.accountInfoProvider = accountInfoProvider;
     }
 
+    @Override
+    public void setPermissionInfo(PermissionInfoProvider permissionInfoProvider) {
+        this.permissionInfoProvider = permissionInfoProvider;
+    }
+
+    @Override
     public void start() throws Exception {
         generateKeyPairIfNotExist(privKeyPath, pubKeyPath);
+
+        File defaultRootDir = new File(rootDir, serverId);
+        defaultRootDir.mkdirs();
 
         sshServer = SshServer.setUpDefaultServer();
         sshServer.setPort(port);
         sshServer.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File(privKeyPath)));
-        sshServer.setFileSystemFactory(new VirtualFileSystemFactory(new File(rootDir, serverId).toPath()));
+        sshServer.setFileSystemFactory(new VirtualFileSystemFactory(defaultRootDir.toPath()));
 
         SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder()
                 .withFileSystemAccessor(new PermissionFileSystemAccessor()).build();
         sshServer.setSubsystemFactories(Collections.singletonList(factory));
 
-
         sshServer.setPasswordAuthenticator(new PasswordAuthenticator() {
             @Override
             public boolean authenticate(String username, String password, ServerSession session) {
-                return (passwordMap.containsKey(username) && passwordMap.get(username).equals(password));
+                session.setAttribute(USERNAME, username);
+                String pw = accountInfoProvider.getPasswordByUsername(username);
+                if(pw == null)
+                    return false;
+                return pw.equals(password);
             }
         });
-        sshServer.setPublickeyAuthenticator(new AuthorizedKeysAuthenticator(new File(authorizedKeysPath)));
+        sshServer.setPublickeyAuthenticator(new PublickeyAuthenticator() {
+            @Override
+            public boolean authenticate(String username, PublicKey publicKey, ServerSession serverSession) {
+                if(KeyUtils.findMatchingKey(publicKey, accountInfoProvider.getPublicKeyByUsername(username)) != null) {
+                    serverSession.setAttribute(USERNAME, username);
+                    return true;
+                } else
+                    return false;
+            }
+        });
 
         sshServer.start();
         System.out.println("SFTP Server Started.. [port :: " + port + "]");
@@ -100,12 +117,14 @@ public class SFTPServer {
         }
     }
 
+    @Override
     public void restart() throws IOException {
         stop();
         sshServer.start();
         System.out.println("SFTP Server restarted.. ");
     }
 
+    @Override
     public void stop() throws IOException {
         if (sshServer != null)
             sshServer.stop();
@@ -138,12 +157,14 @@ public class SFTPServer {
             }
         }
         private boolean checkUserPermission(ServerSession session, Path path) {
-            List<String> userPaths = permissionMap.get(session.getUsername());
+            List<String> userPermissions = permissionInfoProvider.getPermissions(session.getAttribute(USERNAME));
             boolean isAllowed = false;
-            for(String userPath : userPaths) {
-                if (path.startsWith(userPath)) {
-                    isAllowed = true;
-                    break;
+            if(userPermissions != null) {
+                for(String folderPath : userPermissions) {
+                    if (path.startsWith(folderPath)) {
+                        isAllowed = true;
+                        break;
+                    }
                 }
             }
             return isAllowed;

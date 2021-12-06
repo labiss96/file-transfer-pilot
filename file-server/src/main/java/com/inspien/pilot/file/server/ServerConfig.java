@@ -2,23 +2,22 @@ package com.inspien.pilot.file.server;
 
 public class ServerConfig {
     private String rootDir;
+    private String configDir;
     private String serverId;
     private int port;
-    private String privKeyPath;
-    private String pubKeyPath;
-    private String authorizedKeysPath;
-
-    public ServerConfig(String rootDir, String serverId, int port, String privKeyPath, String pubKeyPath, String authorizedKeysPath) {
+    public ServerConfig(String rootDir, String configDir, String serverId, int port) {
         this.rootDir = rootDir;
+        this.configDir = configDir;
         this.serverId = serverId;
         this.port = port;
-        this.privKeyPath = privKeyPath;
-        this.pubKeyPath = pubKeyPath;
-        this.authorizedKeysPath = authorizedKeysPath;
     }
 
     public String getRootDir() {
         return rootDir;
+    }
+
+    public String getConfigDir() {
+        return configDir;
     }
 
     public String getServerId() {
@@ -29,15 +28,18 @@ public class ServerConfig {
         return port;
     }
 
-    public String getPrivKeyPath() {
-        return privKeyPath;
-    }
-
-    public String getPubKeyPath() {
-        return pubKeyPath;
-    }
-
-    public String getAuthorizedKeysPath() {
-        return authorizedKeysPath;
-    }
+//    public static enum ProtocolType {
+//        SFTP("SFTP"),
+//        FTP("FTP");
+//
+//        private String value;
+//
+//        ProtocolType(String value) {
+//            this.value = value;
+//        }
+//
+//        public String getValue() {
+//            return value;
+//        }
+//    }
 }
