@@ -22,7 +22,7 @@ public class FTPServerManagerTest {
 
     @Before
     public void setup() throws Exception {
-        ServerConfig config = new ServerConfig("C:/file-transfer/ftp","target/fts/", "svc-1", 2221);
+        ServerConfig config = new ServerConfig("C:/file-transfer/ftp", "svc-1", 2221);
         AccountInfoProvider accountInfoProvider = new TestAccountInfoProvider();
         PermissionInfoProvider permissionInfoProvider = new TestPermissionInfoProvider();
         server = new FTPServerManager(config, accountInfoProvider, permissionInfoProvider);
@@ -45,7 +45,7 @@ public class FTPServerManagerTest {
 
             File putFile = new File("C:/file-transfer/put_test.txt");
             try(InputStream inputStream = new FileInputStream(putFile);) {
-                boolean result = ftpClient.storeFile("folder-2/test.txt", inputStream);
+                boolean result = ftpClient.storeFile("folder-1/test.txt", inputStream);
                 System.out.println("ftp store file ==> " + result);
                 Assert.assertTrue(result);
             }

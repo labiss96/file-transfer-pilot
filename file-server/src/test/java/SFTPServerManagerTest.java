@@ -20,7 +20,7 @@ import java.util.List;
 public class SFTPServerManagerTest {
     @Before
     public void setup() throws Exception {
-        SFTPServerConfig config = new SFTPServerConfig("C:/file-transfer/sftp", "target/sftp/", "svc-1", SERVER_PORT,
+        SFTPServerConfig config = new SFTPServerConfig("C:/file-transfer/sftp", "svc-1", SERVER_PORT,
                 SERVER_PRIV_KEY_PATH, SERVER_PUB_KEY_PATH
         );
 
