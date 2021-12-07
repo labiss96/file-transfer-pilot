@@ -1,7 +1,7 @@
 import com.inspien.pilot.file.server.AccountInfoProvider;
 import com.inspien.pilot.file.server.FileTransferServerManager;
 import com.inspien.pilot.file.server.PermissionInfoProvider;
-import com.inspien.pilot.file.server.ServerConfig;
+import com.inspien.pilot.file.server.ftp.ServerConfig;
 import com.inspien.pilot.file.server.ftp.FTPServerManager;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPReply;
@@ -15,17 +15,17 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.PublicKey;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FTPServerManagerTest {
 
     @Before
     public void setup() throws Exception {
         ServerConfig config = new ServerConfig("C:/file-transfer/ftp", "svc-1", 2221);
-        AccountInfoProvider accountInfoProvider = new TestAccountInfoProvider();
+
+        Map<String, String> passwordMap = new HashMap<>();
+        passwordMap.put("test", "1234");
+        accountInfoProvider = new TestAccountInfoProvider(passwordMap);
 
         Map<String, List<String>> permissionMap = new HashMap<>();
         permissionMap.put("test", Arrays.asList("/folder-1"));
@@ -35,10 +35,11 @@ public class FTPServerManagerTest {
         server.start();
     }
     private FileTransferServerManager server;
-    private PermissionInfoProvider permissionInfoProvider;
+    private TestPermissionInfoProvider permissionInfoProvider;
+    private TestAccountInfoProvider accountInfoProvider;
 
     @Test
-    public void test() throws IOException {
+    public void ConnectTest() throws IOException {
         FTPClient ftpClient;
         ftpClient= new FTPClient();
         ftpClient.connect("localhost", 2221);
@@ -63,7 +64,7 @@ public class FTPServerManagerTest {
     }
 
     @Test
-    public void updateConfigTest() throws Exception {
+    public void updatePermissionTest() throws Exception {
         FTPClient ftpClient;
         ftpClient= new FTPClient();
         ftpClient.connect("localhost", 2221);
@@ -97,6 +98,43 @@ public class FTPServerManagerTest {
             ftpClient.disconnect();
     }
 
+    @Test
+    public void updateAccountTest() throws Exception {
+        FTPClient ftpClient;
+        ftpClient= new FTPClient();
+        ftpClient.connect("localhost", 2221);
+
+        int reply = ftpClient.getReplyCode();
+        if(!FTPReply.isPositiveCompletion(reply)) {
+            ftpClient.disconnect();
+            System.out.println("FTP Server refused connection");
+        } else {
+            ftpClient.login("test", "1234");
+            ftpClient.logout();
+        }
+        if(ftpClient != null && ftpClient.isConnected())
+            ftpClient.disconnect();
+
+
+        Map<String, String> passwordMap = new HashMap<>();
+        passwordMap.put("test2", "12345");
+        accountInfoProvider.setPasswordMap(passwordMap);
+
+        ftpClient= new FTPClient();
+        ftpClient.connect("localhost", 2221);
+
+        reply = ftpClient.getReplyCode();
+        if(!FTPReply.isPositiveCompletion(reply)) {
+            ftpClient.disconnect();
+            System.out.println("FTP Server refused connection");
+        } else {
+            ftpClient.login("test2","12345");
+            ftpClient.logout();
+        }
+        if(ftpClient != null && ftpClient.isConnected())
+            ftpClient.disconnect();
+    }
+
 
     @After
     public void shutdown() throws Exception {
@@ -106,31 +144,29 @@ public class FTPServerManagerTest {
 
 
     private static class TestAccountInfoProvider implements AccountInfoProvider {
+        private Map<String, String> passwordMap;
+
+        public TestAccountInfoProvider(Map<String, String> passwordMap) {
+            this.passwordMap = passwordMap;
+        }
+
         @Override
         public List<String> getUserList() {
-            return Arrays.asList("test");
+            return new ArrayList<>(passwordMap.keySet());
         }
 
         @Override
         public String getPasswordByUsername(String username) {
-            if(username.equals("test"))
-                return "1234";
-            return null;
+            return passwordMap.get(username);
         }
 
         @Override
-        public PublicKey getPublicKeyByUsername(String username) {
-            return null;
+        public String getUsernameByPublicKey(PublicKey key) {
+            return "test";
         }
 
-        @Override
         public void setPasswordMap(Map<String, String> passwordMap) {
-
-        }
-
-        @Override
-        public void setPublicKeyMap(Map<String, PublicKey> publicKeyMap) {
-
+            this.passwordMap = passwordMap;
         }
     }
 
@@ -146,7 +182,6 @@ public class FTPServerManagerTest {
             return permissionMap.get(username);
         }
 
-        @Override
         public void setPermissionMap(Map<String, List<String>> permissionMap) {
             this.permissionMap = permissionMap;
         }

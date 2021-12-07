@@ -1,4 +1,4 @@
-package com.inspien.pilot.file.server;
+package com.inspien.pilot.file.server.ftp;
 
 public class ServerConfig {
     private String rootDir;

@@ -34,7 +34,7 @@ import java.util.Set;
 
 public class SFTPServerManager implements FileTransferServerManager {
 
-    private static final Session.AttributeKey<String> USERNAME= new Session.AttributeKey<>();
+    private static final Session.AttributeKey<String> USERNAME = new Session.AttributeKey<>();
 
     private String rootDir;
     private String serverId;
@@ -77,7 +77,7 @@ public class SFTPServerManager implements FileTransferServerManager {
             public boolean authenticate(String username, String password, ServerSession session) {
                 session.setAttribute(USERNAME, username);
                 String pw = accountInfoProvider.getPasswordByUsername(username);
-                if(pw == null)
+                if (pw == null)
                     return false;
                 return pw.equals(password);
             }
@@ -85,7 +85,7 @@ public class SFTPServerManager implements FileTransferServerManager {
         sshServer.setPublickeyAuthenticator(new PublickeyAuthenticator() {
             @Override
             public boolean authenticate(String username, PublicKey publicKey, ServerSession serverSession) {
-                if(KeyUtils.findMatchingKey(publicKey, accountInfoProvider.getPublicKeyByUsername(username)) != null) {
+                if (username.equals(accountInfoProvider.getUsernameByPublicKey(publicKey))) {
                     serverSession.setAttribute(USERNAME, username);
                     return true;
                 } else
@@ -124,33 +124,37 @@ public class SFTPServerManager implements FileTransferServerManager {
     private class PermissionFileSystemAccessor implements SftpFileSystemAccessor {
         @Override
         public SeekableByteChannel openFile(ServerSession session, SftpEventListenerManager subsystem, Path file, String handle, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-            if(checkUserPermission(session, file)) {
+            if (checkUserPermission(session, file)) {
                 return SftpFileSystemAccessor.super.openFile(session, subsystem, file, handle, options, attrs);
             } else {
                 throw new AccessDeniedException("Access denied.");
             }
         }
+
         @Override
         public FileLock tryLock(ServerSession session, SftpEventListenerManager subsystem, Path file, String handle, Channel channel, long position, long size, boolean shared) throws IOException {
             return SftpFileSystemAccessor.super.tryLock(session, subsystem, file, handle, channel, position, size, shared);
         }
+
         @Override
         public void syncFileData(ServerSession session, SftpEventListenerManager subsystem, Path file, String handle, Channel channel) throws IOException {
             SftpFileSystemAccessor.super.syncFileData(session, subsystem, file, handle, channel);
         }
+
         @Override
         public DirectoryStream<Path> openDirectory(ServerSession session, SftpEventListenerManager subsystem, Path dir, String handle) throws IOException {
-            if(checkUserPermission(session, dir)) {
+            if (checkUserPermission(session, dir)) {
                 return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dir, handle);
             } else {
                 throw new AccessDeniedException("Access denied.");
             }
         }
+
         private boolean checkUserPermission(ServerSession session, Path path) {
             List<String> userPermissions = permissionInfoProvider.getPermissionByUsername(session.getAttribute(USERNAME));
             boolean isAllowed = false;
-            if(userPermissions != null) {
-                for(String folderPath : userPermissions) {
+            if (userPermissions != null) {
+                for (String folderPath : userPermissions) {
                     if (path.startsWith(folderPath)) {
                         isAllowed = true;
                         break;

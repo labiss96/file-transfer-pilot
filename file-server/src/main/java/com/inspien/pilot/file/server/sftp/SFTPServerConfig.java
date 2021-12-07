@@ -1,6 +1,6 @@
 package com.inspien.pilot.file.server.sftp;
 
-import com.inspien.pilot.file.server.ServerConfig;
+import com.inspien.pilot.file.server.ftp.ServerConfig;
 
 public class SFTPServerConfig extends ServerConfig {
     private String privKeyPath;

@@ -3,7 +3,6 @@ package com.inspien.pilot.file.server.ftp;
 import com.inspien.pilot.file.server.AccountInfoProvider;
 import com.inspien.pilot.file.server.FileTransferServerManager;
 import com.inspien.pilot.file.server.PermissionInfoProvider;
-import com.inspien.pilot.file.server.ServerConfig;
 import org.apache.ftpserver.FtpServer;
 import org.apache.ftpserver.FtpServerFactory;
 import org.apache.ftpserver.ftplet.*;

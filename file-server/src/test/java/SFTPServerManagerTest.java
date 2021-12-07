@@ -4,6 +4,7 @@ import com.inspien.pilot.file.server.PermissionInfoProvider;
 import com.inspien.pilot.file.server.sftp.SFTPServerConfig;
 import com.inspien.pilot.file.server.sftp.SFTPServerManager;
 import com.jcraft.jsch.*;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.junit.After;
@@ -16,7 +17,6 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 public class SFTPServerManagerTest {
     @Before
@@ -159,42 +159,28 @@ public class SFTPServerManagerTest {
         }
 
         @Override
-        public PublicKey getPublicKeyByUsername(String username) {
-            PublicKey pubKey = null;
-            if(username.equals(TEST_USERNAME)) {
-                try {
-                    String pubKeyStr = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDJn2ITm+osm7M1mseqMMcFpy9+o2vhBCRDUawkAaRD7duJoV3BUYKlkLes8Zesgbq8QCyLnDAvgJWCS9yM/J3YbxUO2yXhwZqWmD0ZWF3RxbtsNB6vZ6Vbne2RmgH9B0Gs1jkLOz6dRkUdJwZs2tmn62FjrTxw/MWLlCdS17HrXp9GZFxx5ArmhY4GFi/gj8EtnfMjD+ikNQ4s65W5LsRGhNXsKPMF9hgXqZEsD5oXu23ZwyeffX5Cs/JQZkNUCCvEV5FKL61Z3agHdKmJ0trzBbzLTZg8t+X/pn7aus2BynMjCh/M0pDcv5t0Ys52ETqcvwgX3ryAiZy/LW8nFOKeu1bMGLe8pzdgvpYK7ufxUC9FEEtD726C9rOEOZI5KnfY/rq0FC1jmP0nbJAlg3qHFdVD+aBir/f21I04mbVRHRW9/FyyX745V2tJqXqugMUT/uqsrBG4bwfS0zkYaSlpzauLv1RuzBx6ugEPmaNCefy40Rfz80raHfmdwfZ5bvE= leejh@LAPTOP-0O8K2CLM\n";
-                    pubKey = PublicKeyEntry.parsePublicKeyEntry(pubKeyStr).resolvePublicKey(PublicKeyEntryResolver.IGNORING);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        public String getUsernameByPublicKey(PublicKey key) {
+            PublicKey knownKey = null;
+            try {
+                String pubKeyStr = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDJn2ITm+osm7M1mseqMMcFpy9+o2vhBCRDUawkAaRD7duJoV3BUYKlkLes8Zesgbq8QCyLnDAvgJWCS9yM/J3YbxUO2yXhwZqWmD0ZWF3RxbtsNB6vZ6Vbne2RmgH9B0Gs1jkLOz6dRkUdJwZs2tmn62FjrTxw/MWLlCdS17HrXp9GZFxx5ArmhY4GFi/gj8EtnfMjD+ikNQ4s65W5LsRGhNXsKPMF9hgXqZEsD5oXu23ZwyeffX5Cs/JQZkNUCCvEV5FKL61Z3agHdKmJ0trzBbzLTZg8t+X/pn7aus2BynMjCh/M0pDcv5t0Ys52ETqcvwgX3ryAiZy/LW8nFOKeu1bMGLe8pzdgvpYK7ufxUC9FEEtD726C9rOEOZI5KnfY/rq0FC1jmP0nbJAlg3qHFdVD+aBir/f21I04mbVRHRW9/FyyX745V2tJqXqugMUT/uqsrBG4bwfS0zkYaSlpzauLv1RuzBx6ugEPmaNCefy40Rfz80raHfmdwfZ5bvE= leejh@LAPTOP-0O8K2CLM\n";
+                knownKey = PublicKeyEntry.parsePublicKeyEntry(pubKeyStr).resolvePublicKey(PublicKeyEntryResolver.IGNORING);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
             }
-            return pubKey;
-        }
-
-        @Override
-        public void setPasswordMap(Map<String, String> passwordMap) {
-
-        }
-
-        @Override
-        public void setPublicKeyMap(Map<String, PublicKey> publicKeyMap) {
-
+            if(KeyUtils.compareKeys(key, knownKey)) {
+                return "test";
+            }
+            return null;
         }
     }
 
     private static class TestPermissionInfoProvider implements PermissionInfoProvider {
         @Override
         public List<String> getPermissionByUsername(String username) {
-            System.out.println("getpermission ::" + username);
             if(username.equals(TEST_USERNAME))
                 return Arrays.asList("/folder1");
             return null;
-        }
-
-        @Override
-        public void setPermissionMap(Map<String, List<String>> permissionMap) {
-
         }
     }
 }
