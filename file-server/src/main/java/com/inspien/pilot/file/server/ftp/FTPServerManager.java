@@ -41,16 +41,6 @@ public class FTPServerManager implements FileTransferServerManager {
     }
 
     @Override
-    public void setAccountInfo(AccountInfoProvider accountInfoProvider) {
-        this.accountInfoProvider = accountInfoProvider;
-    }
-
-    @Override
-    public void setPermissionInfo(PermissionInfoProvider permissionInfoProvider) {
-        this.permissionInfoProvider = permissionInfoProvider;
-    }
-
-    @Override
     public void start() throws Exception {
         serverFactory = new FtpServerFactory();
         factory = new ListenerFactory();

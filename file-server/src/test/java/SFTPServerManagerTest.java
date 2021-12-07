@@ -16,6 +16,7 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 public class SFTPServerManagerTest {
     @Before
@@ -170,15 +171,30 @@ public class SFTPServerManagerTest {
             }
             return pubKey;
         }
+
+        @Override
+        public void setPasswordMap(Map<String, String> passwordMap) {
+
+        }
+
+        @Override
+        public void setPublicKeyMap(Map<String, PublicKey> publicKeyMap) {
+
+        }
     }
 
     private static class TestPermissionInfoProvider implements PermissionInfoProvider {
         @Override
-        public List<String> getPermissions(String username) {
+        public List<String> getPermissionByUsername(String username) {
             System.out.println("getpermission ::" + username);
             if(username.equals(TEST_USERNAME))
                 return Arrays.asList("/folder1");
             return null;
+        }
+
+        @Override
+        public void setPermissionMap(Map<String, List<String>> permissionMap) {
+
         }
     }
 }

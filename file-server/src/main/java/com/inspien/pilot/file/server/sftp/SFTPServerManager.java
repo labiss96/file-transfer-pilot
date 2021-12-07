@@ -57,16 +57,6 @@ public class SFTPServerManager implements FileTransferServerManager {
     }
 
     @Override
-    public void setAccountInfo(AccountInfoProvider accountInfoProvider) {
-        this.accountInfoProvider = accountInfoProvider;
-    }
-
-    @Override
-    public void setPermissionInfo(PermissionInfoProvider permissionInfoProvider) {
-        this.permissionInfoProvider = permissionInfoProvider;
-    }
-
-    @Override
     public void start() throws Exception {
         generateKeyPairIfNotExist(privKeyPath, pubKeyPath);
 
@@ -157,7 +147,7 @@ public class SFTPServerManager implements FileTransferServerManager {
             }
         }
         private boolean checkUserPermission(ServerSession session, Path path) {
-            List<String> userPermissions = permissionInfoProvider.getPermissions(session.getAttribute(USERNAME));
+            List<String> userPermissions = permissionInfoProvider.getPermissionByUsername(session.getAttribute(USERNAME));
             boolean isAllowed = false;
             if(userPermissions != null) {
                 for(String folderPath : userPermissions) {

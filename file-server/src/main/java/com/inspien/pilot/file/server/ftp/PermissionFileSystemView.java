@@ -76,7 +76,7 @@ public class PermissionFileSystemView extends NativeFileSystemView {
 
     private boolean checkUserPermission(String pathStr) {
         Path path = Paths.get(this.prependSlash(pathStr));
-        List<String> userPermissions = provider.getPermissions(user.getName());
+        List<String> userPermissions = provider.getPermissionByUsername(user.getName());
         boolean isAllowed = false;
         for(String folderPath: userPermissions) {
             if(path.startsWith(prependSlash(folderPath))) {
