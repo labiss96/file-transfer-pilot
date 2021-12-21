@@ -17,10 +17,12 @@ import org.apache.ftpserver.usermanager.impl.WritePermission;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class FTPServerManager implements FileTransferServerManager {
 
     private final static String LISTENER_NAME = "default";
+    private final static String PERM_FTPLET_NAME = "default";
     private FtpServerFactory serverFactory;
     private ListenerFactory factory;
     private FtpServer server;
@@ -51,7 +53,11 @@ public class FTPServerManager implements FileTransferServerManager {
         UserManager um = new ProviderUserManager(accountInfoProvider, defaultRootPath);
         serverFactory.setUserManager(um);
 
-        serverFactory.setFileSystem(new PermissionFileSystemFactory(permissionInfoProvider));
+
+        Map<String, Ftplet> ftpletMap = serverFactory.getFtplets();
+        Ftplet ftplet = new PermissionFtplet(permissionInfoProvider);
+        ftpletMap.put(PERM_FTPLET_NAME, ftplet);
+        serverFactory.setFtplets(ftpletMap);
         server = serverFactory.createServer();
 
         server.start();

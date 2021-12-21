@@ -4,6 +4,7 @@ import com.inspien.pilot.file.server.PermissionInfoProvider;
 import com.inspien.pilot.file.server.ftp.ServerConfig;
 import com.inspien.pilot.file.server.ftp.FTPServerManager;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 import org.junit.After;
 import org.junit.Assert;

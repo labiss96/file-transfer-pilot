@@ -5,7 +5,6 @@ import com.inspien.pilot.file.server.FileTransferServerManager;
 import com.inspien.pilot.file.server.PermissionInfoProvider;
 import com.inspien.pilot.file.util.FileUtils;
 import com.inspien.pilot.file.util.TicketKeyPair;
-import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.server.SshServer;
@@ -143,14 +142,11 @@ public class SFTPServerManager implements FileTransferServerManager {
 
         @Override
         public DirectoryStream<Path> openDirectory(ServerSession session, SftpEventListenerManager subsystem, Path dir, String handle) throws IOException {
-            if (checkUserPermission(session, dir)) {
-                return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dir, handle);
-            } else {
-                throw new AccessDeniedException("Access denied.");
-            }
+            return SftpFileSystemAccessor.super.openDirectory(session, subsystem, dir, handle);
         }
 
         private boolean checkUserPermission(ServerSession session, Path path) {
+            System.out.println("check user permission!");
             List<String> userPermissions = permissionInfoProvider.getPermissionByUsername(session.getAttribute(USERNAME));
             boolean isAllowed = false;
             if (userPermissions != null) {
